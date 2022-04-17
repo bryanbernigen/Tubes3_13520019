@@ -1,0 +1,25 @@
+Silahkan Buat database dengan nama xxx (disarankan xxx = dna) pada mysql
+lalu silahkan copy line 4-15 txt ini dan paste pada cmd mysql untuk membuat tabel
+
+CREATE TABLE penyakit(
+	namapenyakit VARCHAR(255) ,
+	rantaidna TEXT NOT NULL,
+	PRIMARY KEY (namapenyakit)
+);
+
+CREATE TABLE prediksi(
+	tanggalprediksi DATE,
+	namapasien VARCHAR(255),
+	namapenyakit VARCHAR(255),
+	statuspenyakit BOOLEAN
+);
+
+secara default, program backend.go mengasumsikan setting mysql user adalah sebagai berikut:
+username = "root"
+password = ""
+database_yang_digunakan = dna
+Jika konfigurasi user berbeda, silahkan ubah pada backend.go pada bagian
+var db_username string = "root"
+var db_password string = ""
+var db_name string = "dna"
+yang terletah diatas main()

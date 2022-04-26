@@ -1,0 +1,77 @@
+.navbar {
+    background: transparent;
+    height: 100px;
+    width: 100%;
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    font-family: "Montserrat Regular";
+    font-size: 1.2rem;
+    
+    position: fixed;
+    top: 0;
+    z-index: 999;
+
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}
+
+.navbarActive {
+    background: #B0C6CB;
+    height: 100px;
+    width: 100%;
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    
+    font-family: "Montserrat Regular";
+    font-size: 1.2rem;
+    
+    position: fixed;
+    top: 0;
+    z-index: 999;
+    
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}
+
+.navContainer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.logoNavbar {
+    max-height: 90px;
+    padding: 0 50px;
+}
+
+.menuContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.menuItem {
+    align-items: center;
+    justify-content: center;
+    margin: auto 30px;
+    font-size: 25px;
+    cursor: pointer;
+    -webkit-transition-duration: 0.5s;
+    transition-duration: 0.5s;
+}
+
+.menuItemText {
+    color: white;
+    -webkit-transition-duration: 0.5s;
+    transition-duration: 0.5s;
+}
+
+.menuItemText:hover {
+    color: #006480;
+    -webkit-transition-duration: 0.5s;
+    transition-duration: 0.5s;
+}

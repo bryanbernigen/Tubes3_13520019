@@ -1,0 +1,32 @@
+.homeContainer {
+    width: 100%;
+}
+
+.homeBG {
+    height: 100vh;
+    width: 100%;
+
+    background-size: cover;
+    background-position: center;
+    background-image: linear-gradient(to right, rgba(97, 97, 97, 0.5) 100%, rgba(15, 147, 183, 0.8) 100%), url('/home/bgimage-home.jpg');
+    
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+
+    display: flex;
+
+    padding: 0px 200px;
+}
+
+.homeTitle {
+    font-family: "Montserrat Bold";
+    font-size: 10rem;
+    font-weight: 700;
+    color: white;
+    text-align: center;
+
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+}

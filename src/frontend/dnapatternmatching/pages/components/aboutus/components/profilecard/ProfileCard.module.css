@@ -1,0 +1,44 @@
+.profileCardBox {
+    width: 500px;
+    height: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 20px;
+    
+    background-color: #B0C6CB;
+    padding: 20px;
+    
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}
+
+.profileCardBox:hover {
+    box-shadow: 0px 0px 20px 10px rgba(0, 0, 0, 0.2);
+    
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}
+
+.photo {
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.name {
+    font-family: "Montserrat Light";
+    font-weight: 400;
+    font-size: 2rem;
+    padding-top: 20px;
+    padding-bottom: 10px;
+}
+
+.nim {
+    font-family: "Montserrat Light";
+    font-weight: 400;
+    font-size: 1.5rem;
+    padding-bottom: 10px;
+}

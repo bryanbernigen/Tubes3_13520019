@@ -1,0 +1,21 @@
+.subheadingText {
+    font-family: "Montserrat Bold";
+    font-size: 30px;
+    text-align: left;
+}
+
+.subheadingTextBlack {
+    color: black;
+}
+
+.subheadingTextWhite {
+    color: white;
+}
+
+.thickLine {
+    background: #616161;
+    width: 20%;
+    height: 5px;
+    border: none;
+    margin: 0;
+}

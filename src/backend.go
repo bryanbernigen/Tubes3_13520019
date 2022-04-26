@@ -24,8 +24,9 @@ var db_password string = ""
 var db_name string = "dna"
 
 func main() {
-	a := readDNAFromFile("homo_sapiens.txt")
-	fmt.Print(a)
+	// a := readDNAFromFile("homo_sapiens.txt")
+	// fmt.Print(a)
+	searchpenyakit("07-02-2022")
 }
 
 func readDNAFromFile(fileName string) string {

@@ -1,0 +1,51 @@
+.search {
+    padding: 100px;
+}
+
+.inputs {
+    margin-top:5%;
+    margin-bottom: 2%;
+    background-color: white;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: flex-start;
+    align-items: center;
+
+    border-radius: 40px;
+    border: 2px solid #616161;
+    padding: 1% 2%;
+    width: 35%;
+    height: fit-content;
+}
+
+.inputs input {
+    border: none;
+    font-size: 30px;
+    font-family: "Montserrat Light";
+    font-weight: 700;
+    text-align: right;
+    color: #616161;
+    width: 90%;
+}
+
+.button {
+    background-color: white;
+    display: grid;
+    place-items: center;
+}
+  
+.inputs input:focus {
+    outline: none;
+}
+
+.searchIcon {
+    width: 28px;
+    height: 28px;
+}
+
+.res {
+    display: flex;
+    justify-content: center;
+    flex-flow: row wrap;
+    align-items: flex-start;
+}

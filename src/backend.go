@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	DB_USER 	= "postgres"
+	DB_USER     = "postgres"
 	DB_PASSWORD = "root"
-	DB_NAME 	= "dnadb"
+	DB_NAME     = "dnadb"
 )
 
 type Prediksi struct {
@@ -28,23 +28,21 @@ type Prediksi struct {
 func main() {
 	a := readDNAFromFile("homo_sapiens.txt")
 	fmt.Println(a)
-	validateDNA(a)
 }
 
-
 func checkErr(err error) {
-    if err != nil {
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 }
 
 func setupDB() *sql.DB {
-    dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
-    db, err := sql.Open("postgres", dbinfo)
+	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
+	db, err := sql.Open("postgres", dbinfo)
 
-    checkErr(err)
+	checkErr(err)
 
-    return db
+	return db
 }
 
 func readDNAFromFile(fileName string) string {
@@ -223,7 +221,7 @@ func addprediksi(namapengguna string, sequencedna string, namapenyakit string) {
 	hasil := KMPMatch(pattern, sequencedna)
 	tm := time.Now()
 	if hasil {
-		res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Local().Local().Format("2006-01-01") + "','" + namapengguna + "','" + namapenyakit + "','1')")
+		res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapengguna + "','" + namapenyakit + "','1')")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -231,7 +229,7 @@ func addprediksi(namapengguna string, sequencedna string, namapenyakit string) {
 		defer res.Close()
 		defer db.Close()
 	} else {
-		res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Local().Format("2006-01-01") + "','" + namapengguna + "','" + namapenyakit + "','0')")
+		res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapengguna + "','" + namapenyakit + "','0')")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -265,6 +263,9 @@ func searchpenyakit(input string) {
 		re, _ = regexp.Compile("[\\w|-]*$")
 		namapenyakit := re.FindString(input)
 		if namapenyakit == year {
+			namapenyakit = ""
+		}
+		if namapenyakit == input {
 			namapenyakit = ""
 		}
 		datemonthyear := year + "-" + monthInInt + "-" + date

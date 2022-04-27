@@ -9,7 +9,13 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+)
+
+const (
+	DB_USER 	= "postgres"
+	DB_PASSWORD = "root"
+	DB_NAME 	= "dnadb"
 )
 
 type Prediksi struct {
@@ -19,14 +25,26 @@ type Prediksi struct {
 	statuspenyakit  bool
 }
 
-var db_username string = "root"
-var db_password string = ""
-var db_name string = "dna"
-
 func main() {
-	// a := readDNAFromFile("homo_sapiens.txt")
-	// fmt.Print(a)
-	searchpenyakit("07-02-2022")
+	a := readDNAFromFile("homo_sapiens.txt")
+	fmt.Println(a)
+	validateDNA(a)
+}
+
+
+func checkErr(err error) {
+    if err != nil {
+        panic(err)
+    }
+}
+
+func setupDB() *sql.DB {
+    dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
+    db, err := sql.Open("postgres", dbinfo)
+
+    checkErr(err)
+
+    return db
 }
 
 func readDNAFromFile(fileName string) string {
@@ -141,10 +159,12 @@ func BoyerMooreMatch(pattern string, text string) bool {
 }
 
 func addpenyakit(namapenyakit string, rantaidna string) {
-	db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
-	if err != nil {
-		panic(err.Error())
-	}
+	// db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	db := setupDB()
 
 	var DNA string = rantaidna
 	res, err := db.Query("INSERT INTO penyakit (namapenyakit, rantaidna) VALUES ('" + namapenyakit + "','" + DNA + "')")
@@ -157,10 +177,12 @@ func addpenyakit(namapenyakit string, rantaidna string) {
 }
 
 func shownamapenyakit() {
-	db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
-	if err != nil {
-		panic(err.Error())
-	}
+	// db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	db := setupDB()
 
 	res, err := db.Query("SELECT namapenyakit FROM penyakit")
 	if err != nil {
@@ -183,10 +205,12 @@ func shownamapenyakit() {
 }
 
 func addprediksi(namapengguna string, sequencedna string, namapenyakit string) {
-	db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
-	if err != nil {
-		panic(err.Error())
-	}
+	// db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
+	// if err != nil {
+	// 	panic(err.Error())
+	// }
+
+	db := setupDB()
 
 	res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
 	res.Next()
@@ -246,10 +270,13 @@ func searchpenyakit(input string) {
 		datemonthyear := year + "-" + monthInInt + "-" + date
 		datemonthyearinput := date + " " + month + " " + year
 		//Connect dengan Database
-		db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
-		if err != nil {
-			log.Fatal(err)
-		}
+		// db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+
+		db := setupDB()
+
 		var semuaprediksi []Prediksi
 		if namapenyakit == "" {
 			fmt.Println(datemonthyear)

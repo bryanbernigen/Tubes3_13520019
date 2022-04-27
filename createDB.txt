@@ -23,3 +23,30 @@ var db_username string = "root"
 var db_password string = ""
 var db_name string = "dna"
 yang terletah diatas main()
+
+
+POSTGRESQL
+
+CREATE DATABASE dnadb ENCODING 'UTF8';
+
+\c dnadb
+
+CREATE TABLE penyakit(
+	namapenyakit VARCHAR(255) ,
+	rantaidna TEXT NOT NULL,
+	PRIMARY KEY (namapenyakit)
+);
+
+CREATE TABLE prediksi(
+	tanggalprediksi DATE,
+	namapasien VARCHAR(255),
+	namapenyakit VARCHAR(255),
+	statuspenyakit BOOLEAN
+);
+
+Before running go, install POSTGRESQL
+go env -w GO111MODULE=off
+go get github.com/lib/pq
+
+To run, execute below command:
+go run backend.go

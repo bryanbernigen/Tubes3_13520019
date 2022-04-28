@@ -5,10 +5,21 @@ import Subheading from '../subheading';
 const SearchBar = ({Result}) => {
     const [searchedWord, setSearchedWord] = useState("");
 
-    const handleFilter = (event) => {
+    const handleChange = async (event) => {
         const wordInput = event.target.value;
         setSearchedWord(wordInput);
-        <console className="log">{wordInput}</console>
+        console.log(searchedWord);
+        const response = await fetch('/api/searchdisease', {
+            method: 'POST',
+            body: JSON.stringify({
+                searchedWord,
+            }),
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        const data = await response.json();
+        console.log(data);
     };
 
     const clearInput = () => {
@@ -44,7 +55,7 @@ const SearchBar = ({Result}) => {
                     <input 
                         type="text" 
                         placeholder= { "Search" }
-                        onChange={ handleFilter }
+                        onChange={ handleChange }
                         value={ searchedWord } />
                 </div>
                 <div className={styles.resOuter}>

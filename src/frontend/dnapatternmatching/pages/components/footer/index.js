@@ -11,7 +11,7 @@ const Footer = () => {
                 <div className={styles.githubContact}>
                     <a href='/'>
                         <button className={styles.githubButton}>
-                            <img src='footer/GitHub-Mark-64px.png' classname={styles.logo}/>
+                            <img src='footer/GitHub-Mark-64px.png' className={styles.logo}/>
                             <span className={styles.name}>runnnayy</span>
                         </button>
                     </a>
@@ -19,7 +19,7 @@ const Footer = () => {
                 <div className={styles.githubContact}>
                     <a href='/'>
                         <button className={styles.githubButton}>
-                            <img src='footer/GitHub-Mark-64px.png' classname={styles.logo}/>
+                            <img src='footer/GitHub-Mark-64px.png' className={styles.logo}/>
                             <span className={styles.name}>bryanbernigen</span>
                         </button>
                     </a>
@@ -27,7 +27,7 @@ const Footer = () => {
                 <div className={styles.githubContact}>
                     <a href='/'>
                         <button className={styles.githubButton}>
-                            <img src='footer/GitHub-Mark-64px.png' classname={styles.logo}/>
+                            <img src='footer/GitHub-Mark-64px.png' className={styles.logo}/>
                             <span className={styles.name}>nk-kyle</span>
                         </button>
                     </a>

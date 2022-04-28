@@ -11,11 +11,11 @@ const TestDNA = ({Tanggal, Pengguna, Penyakit, Hasil}) => {
             />
             <div className={styles.formTestContainer}>
                 <form action="/api/new" method="post" className={styles.formCt}>
-                    <label for="roll" className={styles.label} >Username: </label>
+                    <label className={styles.label} >Username: </label>
                     <input type="text" required className={styles.inputText} />
-                    <label for="name" className={styles.label} >DNA Sequence: </label>
+                    <label className={styles.label} >DNA Sequence: </label>
                     <input name="logo" type="file" className={styles.inputFile} />
-                    <label for="roll" className={styles.label} >Disease Name: </label>
+                    <label className={styles.label} >Disease Name: </label>
                     <input type="text" required className={styles.inputText} />
                     <button type="submit" className={styles.submitButton} >Submit</button>
                 </form>

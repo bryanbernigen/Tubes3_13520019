@@ -33,8 +33,7 @@ CREATE DATABASE dnadb ENCODING 'UTF8';
 
 CREATE TABLE penyakit(
 	namapenyakit VARCHAR(255) ,
-	rantaidna TEXT NOT NULL,
-	PRIMARY KEY (namapenyakit)
+	rantaidna TEXT NOT NULL
 );
 
 CREATE TABLE prediksi(

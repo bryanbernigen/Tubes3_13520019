@@ -173,8 +173,19 @@ func BoyerMooreMatch(pattern string, text string) bool {
 	return result
 }
 
+func rowExists(query string) bool {
+    var exists bool
+	db := setupDB()
+    query = fmt.Sprintf("SELECT exists (%s)", query)
+    err := db.QueryRow(query).Scan(&exists)
+    if err != nil && err != sql.ErrNoRows {
+        log.Fatalf("No rows: %s", query)
+    }
+    return exists
+}
+
 func addpenyakit(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	enableCors(&w)
 	params := mux.Vars(r)
 
 	namapenyakit := params["namapenyakit"]
@@ -192,6 +203,7 @@ func addpenyakit(w http.ResponseWriter, r *http.Request) {
 		defer db.Close()
 	}
 	
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -229,43 +241,63 @@ func addprediksiBM(w http.ResponseWriter, r *http.Request) {
 	if (validateDNA(rantaidna)) {
 
 		db := setupDB()
+		if (rowExists("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")) {
+			res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
+			res.Next()
 
-		res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
-		res.Next()
+			var pattern string
+			res.Scan(&pattern)
+			checkErr(err)
 
-		var pattern string
-		res.Scan(&pattern)
-		if err != nil {
-			log.Fatal(err)
-		}
+			hasil := BoyerMooreMatch(pattern, rantaidna)
+			tm := time.Now()
+			if hasil {
+				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
+				
+				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
+				jsonResponse, jsonError := json.Marshal(ret)
+				if jsonError != nil {
+					fmt.Println("Unable to encode JSON")
+				}
 
-		hasil := BoyerMooreMatch(pattern, rantaidna)
-		tm := time.Now()
-		if hasil {
-			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
-			
-			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
-			jsonResponse, jsonError := json.Marshal(ret)
-			if jsonError != nil {
-				fmt.Println("Unable to encode JSON")
+				fmt.Println(string(jsonResponse))
+
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(jsonResponse)
+
+				res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','1')")
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				defer res.Close()
+				defer db.Close()
+			} else {
+				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
+				
+				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
+				fmt.Println(ret)
+				jsonResponse, jsonError := json.Marshal(ret)
+				if jsonError != nil {
+					log.Fatal(jsonError)
+				}
+
+				fmt.Println(string(jsonResponse))
+
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(jsonResponse)
+
+				res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','0')")
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				defer res.Close()
+				defer db.Close()
 			}
-
-			fmt.Println(string(jsonResponse))
-
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(jsonResponse)
-
-			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','1')")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			defer res.Close()
-			defer db.Close()
 		} else {
-			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
-			
-			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
+			fmt.Println("Penyakit tidak ditemukan")
+			ret := prediksi{Tanggalprediksi: "", Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
 			fmt.Println(ret)
 			jsonResponse, jsonError := json.Marshal(ret)
 			if jsonError != nil {
@@ -276,14 +308,6 @@ func addprediksiBM(w http.ResponseWriter, r *http.Request) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(jsonResponse)
-
-			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','0')")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			defer res.Close()
-			defer db.Close()
 		}
 	}
 }
@@ -300,42 +324,59 @@ func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
 
 		db := setupDB()
 
-		res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
-		res.Next()
+		if (rowExists("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")) {
+			res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
+			res.Next()
 
-		var pattern string
-		res.Scan(&pattern)
-		if err != nil {
-			log.Fatal(err)
-		}
+			var pattern string
+			res.Scan(&pattern)
+			checkErr(err)
 
-		hasil := KMPMatch(pattern, rantaidna)
-		tm := time.Now()
-		if hasil {
-			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
-			
-			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
-			jsonResponse, jsonError := json.Marshal(ret)
-			if jsonError != nil {
-				fmt.Println("Unable to encode JSON")
+			hasil := KMPMatch(pattern, rantaidna)
+			tm := time.Now()
+			if hasil {
+				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
+				
+				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
+				jsonResponse, jsonError := json.Marshal(ret)
+				if jsonError != nil {
+					fmt.Println("Unable to encode JSON")
+				}
+
+				fmt.Println(string(jsonResponse))
+
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(jsonResponse)
+
+				res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','1')")
+				checkErr(err)
+
+				defer res.Close()
+				defer db.Close()
+			} else {
+				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
+				
+				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
+				fmt.Println(ret)
+				jsonResponse, jsonError := json.Marshal(ret)
+				if jsonError != nil {
+					log.Fatal(jsonError)
+				}
+
+				fmt.Println(string(jsonResponse))
+
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(jsonResponse)
+
+				res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','0')")
+				checkErr(err)
+
+				defer res.Close()
+				defer db.Close()
 			}
-
-			fmt.Println(string(jsonResponse))
-
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(jsonResponse)
-
-			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','1')")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			defer res.Close()
-			defer db.Close()
 		} else {
-			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
-			
-			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
+			fmt.Println("Penyakit tidak ditemukan")
+			ret := prediksi{Tanggalprediksi: "", Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
 			fmt.Println(ret)
 			jsonResponse, jsonError := json.Marshal(ret)
 			if jsonError != nil {
@@ -346,14 +387,6 @@ func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
 
 			w.Header().Set("Content-Type", "application/json")
 			w.Write(jsonResponse)
-
-			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','0')")
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			defer res.Close()
-			defer db.Close()
 		}
 	}
 }
@@ -440,55 +473,56 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 	var semuaprediksi []prediksi
 	if namapenyakit == "" {
 		fmt.Println(datemonthyear)
-		res, err := db.Query("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'")
-		if err != nil {
-			log.Fatal(err)
-		}
-		for res.Next() {
-			var varprediksi prediksi
-			err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
-			
-			if err != nil {
-				log.Fatal(err)
+
+		// Check existence of data searched
+		if (rowExists("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'")) {
+			res, err := db.Query("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'")
+			checkErr(err)
+			for res.Next() {
+				var varprediksi prediksi
+				err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
+				
+				checkErr(err)
+				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 			}
-			semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
+			checkErr(err)
+			
+			defer res.Close()
 		}
-		// json.NewEncoder(w).Encode(semuaprediksi)
-		defer res.Close()
 	} else {
 		if datemonthyear == "" {
 			fmt.Println(namapenyakit)
-			res, err := db.Query("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "'")
-			if err != nil {
-				log.Fatal(err)
-			}
-			for res.Next() {
-				var varprediksi prediksi
-				err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
-
+			if (rowExists("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "'")) {
+				res, err := db.Query("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "'")
 				if err != nil {
 					log.Fatal(err)
 				}
-				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
+				for res.Next() {
+					var varprediksi prediksi
+					err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
+
+					checkErr(err)
+					semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
+				}
+				
+				defer res.Close()
 			}
-			// fmt.Println(semuaprediksi)
-			defer res.Close()
 		}else {
 			fmt.Println(datemonthyear + " " + namapenyakit)
-			res, err := db.Query("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "' AND tanggalprediksi like '" + datemonthyear + "'")
-				log.Fatal(err)
-			
-			for res.Next() {
-				var varprediksi prediksi
-				err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
+			if (rowExists("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "' AND tanggalprediksi like '" + datemonthyear + "'")) {
+				res, err := db.Query("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "' AND tanggalprediksi like '" + datemonthyear + "'")
+				checkErr(err)
+				
+				for res.Next() {
+					var varprediksi prediksi
+					err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
 
-				if err != nil {
-					log.Fatal(err)
+					checkErr(err)
+					semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 				}
-				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
+				
+				defer res.Close()
 			}
-			// json.NewEncoder(w).Encode(semuaprediksi)
-			defer res.Close()
 		}
 	}
 	fmt.Println(semuaprediksi)

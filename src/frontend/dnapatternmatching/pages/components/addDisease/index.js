@@ -38,7 +38,12 @@ const AddDisease = () => {
                 },
                 mode: 'no-cors'
         })
-        .then(json => { console.log(json) });
+        .then(json => { 
+            console.log(json);
+            setNamapenyakit('');
+            setRantaiDNA('');
+            setFile(null);
+        });
     }
 
     return (

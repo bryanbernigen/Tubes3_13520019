@@ -46,10 +46,9 @@
 .resOuter {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
-    border: 3px solid transparent;
-    border-color: #616161;
+    align-content: center;
     font-family: "Montserrat Bold";
 }
 
@@ -58,4 +57,25 @@
     font-family: "Montserrat Light";
     font-weight: 400;
     font-size: 30px;
+}
+
+.notFound {
+    background-color: #B0C6CB;
+    padding: 100px;
+    text-align: center;
+    font-family: "Montserrat Regular";
+    font-size: 30px;
+    color: black;
+    border-radius: 50px;
+    border: none;
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}
+
+.notFound:hover {
+    background-color: #006480;
+    box-shadow: 0px 0px 20px 10px rgba(0, 0, 0, 0.2);
+    color: white;
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
 }

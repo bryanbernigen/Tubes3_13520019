@@ -34,7 +34,7 @@ const SearchBar = () => {
 
     const generateCt = (ct) => {
         if (ct) {
-            let res = []
+            let res = [];
             for (let i = 0; i < ct.length; i++) {
                 res.push(
                     <div>
@@ -44,6 +44,9 @@ const SearchBar = () => {
                 )
             }
             return res
+        }
+        else {
+            return <div className={styles.notFound}>There's no prediction as queried</div>
         }
     }
 

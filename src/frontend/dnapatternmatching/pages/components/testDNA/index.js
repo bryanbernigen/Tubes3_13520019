@@ -103,7 +103,7 @@ const TestDNA = () => {
                 />
                 <div className={styles.formTestContainer}>
                     {
-                        (filled)
+                        (filled && tanggalprediksi !== '')
                         ?   <div>
                                 <span className={styles.resultText}>{ tanggalprediksi }</span>
                                 <span className={styles.resultText}> — </span>
@@ -113,11 +113,14 @@ const TestDNA = () => {
                                 <span className={styles.resultText}> — </span>
                                 <span className={styles.resultText}>{ statuspenyakit.toString() }</span>
                             </div>
-                        :   <div>
-                                {/* <span className={styles.resultText}> — </span>
-                                <span className={styles.resultText}> — </span>
-                                <span className={styles.resultText}> — </span> */}
-                            </div>
+                        :   (filled && tanggalprediksi === '')
+                            ?   <div>
+                                    <span className={styles.resultText}>Disease Not Found</span>
+                                </div>
+                            :
+                                <div>
+                                    <span className={styles.resultText}></span>
+                                </div>
                     }
                 </div>
             </div>

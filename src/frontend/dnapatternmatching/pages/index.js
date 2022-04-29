@@ -7,6 +7,7 @@ import TestDNA from './components/testDNA'
 import SearchBar from './components/searchbar'
 import styles from '../styles/Home.module.css'
 import AboutUs from './components/aboutus'
+import ScrollTop from './components/scroll'
 
 export default function Home() {
   return (
@@ -37,7 +38,7 @@ export default function Home() {
       <div id="TestDNASection">
         <TestDNA />
       </div>
-      <div id="SearchBarSection" className={styles.searchBarContainer}>
+      <div id="SearchBarSection">
         <SearchBar />
       </div>
       <div id="AboutUsSection">
@@ -46,6 +47,7 @@ export default function Home() {
       <div id="ContactSection">
         <Footer />
       </div>
+      <ScrollTop />
     </div>
   )
 }

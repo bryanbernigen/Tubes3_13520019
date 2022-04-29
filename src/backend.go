@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	// "strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -37,10 +36,6 @@ type Input struct {
 	Input 		string		`json:"input"`
 }
 
-type Status struct {
-	Statuspenyakit 	bool 	`json:"statuspenyakit"`
-}
-
 func main() {
 	fmt.Println("Server started on port 8080")
 	r := mux.NewRouter()
@@ -48,7 +43,7 @@ func main() {
 	r.HandleFunc("/api/submitdisease/{namapenyakit}/{rantaidna}", addpenyakit).Methods("POST")
 	r.HandleFunc("/api/getpredictionKMP/{namapasien}/{rantaidna}/{namapenyakit}", addprediksiKMP).Methods("POST")
 	r.HandleFunc("/api/getpredictionBM/{namapasien}/{rantaidna}/{namapenyakit}", addprediksiBM).Methods("POST")
-	r.HandleFunc("/api/searchdisease", searchpenyakit).Methods("POST")
+	r.HandleFunc("/api/searchdisease/{input}", searchpenyakit).Methods("POST")
 	http.ListenAndServe(":8080", r)
 }
 
@@ -364,23 +359,24 @@ func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
 }
 
 func searchpenyakit(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+	enableCors(&w)
 	params := mux.Vars(r)
 
-	var input string = params["input"]
+	inp := params["input"]
+	fmt.Println("ini masukannya : ", inp)
 
 	datemonthyear := ""
 	namapenyakit := ""
 	//Regex dengan Format: tanggal bulan tahun namapenyakit
-	re, _ := regexp.Compile("^[\\w|-]*$")
-	if re.FindString((input)) != "" {
-		namapenyakit = re.FindString((input))
+	re, _ := regexp.Compile("^[^\\d][\\w|-]*$")
+	if re.FindString((inp)) != "" {
+		namapenyakit = re.FindString((inp))
 		fmt.Println("Penyakit Saja")
 	} else {
 		re, _ = regexp.Compile("^(0?[1-9]|[12][0-9]|3[01])[^\\d]*(0?[1-9]|1[012]|[\\w]{3,9})[^\\d]*([1-9][0-9]{3})$")
-		if re.FindString((input)) != "" {
+		if re.FindString((inp)) != "" {
 			re, _ = regexp.Compile("^(0?[1-9]|[12][0-9]|3[01])[^\\d]")
-			date := re.FindString(input)
+			date := re.FindString(inp)
 			if len(date) == 2 {
 				date = "0" + date
 			}
@@ -388,7 +384,7 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 			date = re.FindString(date)
 			//Cari bulan dengan nilai 01-12 atau 1-12
 			re, _ = regexp.Compile("[^\\d](0?[1-9]|1[012]|[\\w]{3,9})[^\\d]")
-			month := re.FindString(input)
+			month := re.FindString(inp)
 			fmt.Println("a" + month + "a")
 			if len(month) == 3 {
 				re, _ = regexp.Compile("[1-9]")
@@ -401,15 +397,15 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(month)
 			//Cari tahun dengan nilai 1000-9999
 			re, _ = regexp.Compile("([1-9][0-9]{3})")
-			year := re.FindString(input)
+			year := re.FindString(inp)
 			datemonthyear = year + "-" + month + "-" + date
 			fmt.Println("Tanggal Saja")
 		} else {
 			re, _ = regexp.Compile("^(0?[1-9]|[12][0-9]|3[01])[^\\d]*(0?[1-9]|1[012]|[\\w]{3,9})[^\\d]*([1-9][0-9]{3})[^\\d]*[\\w|-]*$")
-			if re.FindString((input)) != "" {
+			if re.FindString((inp)) != "" {
 				//Cari tanggal dengan nilai 01-31 atai 1-31
 				re, _ = regexp.Compile("^(0?[1-9]|[12][0-9]|3[01])[^\\d]")
-				date := re.FindString(input)
+				date := re.FindString(inp)
 				if len(date) == 2 {
 					date = "0" + date
 				}
@@ -417,7 +413,7 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 				date = re.FindString(date)
 				//Cari bulan dengan nilai 01-12 atau 1-12
 				re, _ = regexp.Compile("[^\\d](0?[1-9]|1[012]|[\\w]{3,9})[^\\d]")
-				month := re.FindString(input)
+				month := re.FindString(inp)
 				if len(month) == 3 {
 					re, _ = regexp.Compile("[1-9]")
 					month = re.FindString(month)
@@ -429,10 +425,10 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(month)
 				//Cari tahun dengan nilai 1000-9999
 				re, _ = regexp.Compile("([1-9][0-9]{3})")
-				year := re.FindString(input)
+				year := re.FindString(inp)
 				//Cari nama penyakit dengan whitespace kecuali '-' sebagai pemisah dengan tahun
 				re, _ = regexp.Compile("[\\w|-]*$")
-				namapenyakit = re.FindString(input)
+				namapenyakit = re.FindString(inp)
 				datemonthyear = year + "-" + month + "-" + date
 				fmt.Println("Tanggal dan Penyakit Saja")
 			}
@@ -457,8 +453,8 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 			}
 			semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 		}
+		// json.NewEncoder(w).Encode(semuaprediksi)
 		defer res.Close()
-		json.NewEncoder(w).Encode(semuaprediksi)
 	} else {
 		if datemonthyear == "" {
 			fmt.Println(namapenyakit)
@@ -475,7 +471,7 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 				}
 				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 			}
-			fmt.Println(semuaprediksi)
+			// fmt.Println(semuaprediksi)
 			defer res.Close()
 		}else {
 			fmt.Println(datemonthyear + " " + namapenyakit)
@@ -491,11 +487,20 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 				}
 				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 			}
+			// json.NewEncoder(w).Encode(semuaprediksi)
 			defer res.Close()
-			json.NewEncoder(w).Encode(semuaprediksi)
 		}
 	}
 	fmt.Println(semuaprediksi)
+	// POST
+	jsonResponse, jsonError := json.Marshal(semuaprediksi)
+	if jsonError != nil {
+		fmt.Println("Unable to encode JSON")
+	}
+	fmt.Println(string(jsonResponse))
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonResponse)
 }
 
 func monthInInt(input string) string {

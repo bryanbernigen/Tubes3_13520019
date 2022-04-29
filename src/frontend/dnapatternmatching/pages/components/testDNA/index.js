@@ -10,7 +10,6 @@ const TestDNA = () => {
     const [rantaidna, setRantaiDNA] = useState('');
     const [filled, setFilled] = useState(false);
     const [file, setFile] = useState(null);
-    const [isPending, setIsPending] = useState(false);
 
     const handleChangeNamaPasien = (e) => {
         setNamaPasien(e.target.value);
@@ -90,20 +89,11 @@ const TestDNA = () => {
                     <input name="logo" type="file" onChange={handleChangeRantaiDNA} className={styles.inputFile} />
                     <label className={styles.label} >Disease Name: </label>
                     <input type="text" required onChange={handleChangeNamaPenyakit} className={styles.inputText} />
-                    { (!isPending) && 
-                        <div className={styles.submitButtonCt}>
-                            <button type="submit" onClick={onClickKMP} className={styles.submitButton} >Knuth-Morris-Pratt</button>
-                            <div className={styles.spacing}></div>
-                            <button type="submit" onClick={onClickBM} className={styles.submitButton} >Boyer-Moore</button>
-                        </div>
-                    }
-                    { (isPending) && 
-                        <div className={styles.submitButtonCt}>
-                            <button disabled type="submit" onClick={onClickKMP} className={styles.submitButton} >Processing</button>
-                            <div className={styles.spacing}></div>
-                            <button disabled type="submit" onClick={onClickBM} className={styles.submitButton} >Processing</button>
-                        </div>
-                    }
+                    <div className={styles.submitButtonCt}>
+                        <button type="submit" onClick={onClickKMP} className={styles.submitButton} >Knuth-Morris-Pratt</button>
+                        <div className={styles.spacing}></div>
+                        <button type="submit" onClick={onClickBM} className={styles.submitButton} >Boyer-Moore</button>
+                    </div>
                 </form>
             </div>
             <div className={styles.resultContainer}>

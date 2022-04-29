@@ -1,0 +1,20 @@
+.cardCt {
+    text-align: center;
+    padding: 10px 30px;
+    border-radius: 50px;
+    border: none;
+    background-color: #B0C6CB;
+    color: black;
+    font-size: 20px;
+    font-family: "Montserrat Regular";
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}
+
+.cardCt:hover {
+    background-color: #006480;
+    box-shadow: 0px 0px 20px 10px rgba(0, 0, 0, 0.2);
+    color: white;
+    -webkit-transition-duration: 0.3s; 
+    transition-duration: 0.3s;
+}

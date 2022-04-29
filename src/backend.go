@@ -2,38 +2,39 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
-	"net/http"
-	"encoding/json"
+
 	"github.com/gorilla/mux"
 
 	_ "github.com/lib/pq"
 )
 
 const (
-	DB_USER 	= "postgres"
+	DB_USER     = "postgres"
 	DB_PASSWORD = "root"
-	DB_NAME 	= "dnadb"
+	DB_NAME     = "dnadb"
 )
 
 type prediksi struct {
-	Tanggalprediksi string	`json:"tanggalprediksi"`
-	Namapasien      string	`json:"namapasien"`
-	Namapenyakit    string	`json:"namapenyakit"`
-	Statuspenyakit  bool	`json:"statuspenyakit"`
+	Tanggalprediksi string `json:"tanggalprediksi"`
+	Namapasien      string `json:"namapasien"`
+	Namapenyakit    string `json:"namapenyakit"`
+	Statuspenyakit  bool   `json:"statuspenyakit"`
 }
 
 type Penyakit struct {
-	Namapenyakit string		`json:"namapenyakit"`
-	Rantaidna    string		`json:"rantaidna"`
+	Namapenyakit string `json:"namapenyakit"`
+	Rantaidna    string `json:"rantaidna"`
 }
 
 type Input struct {
-	Input 		string		`json:"input"`
+	Input string `json:"input"`
 }
 
 func main() {
@@ -48,9 +49,9 @@ func main() {
 }
 
 func checkErr(err error) {
-    if err != nil {
-        panic(err)
-    }
+	if err != nil {
+		panic(err)
+	}
 }
 
 func enableCors(w *http.ResponseWriter) {
@@ -58,12 +59,12 @@ func enableCors(w *http.ResponseWriter) {
 }
 
 func setupDB() *sql.DB {
-    dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
-    db, err := sql.Open("postgres", dbinfo)
+	dbinfo := fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable", DB_USER, DB_PASSWORD, DB_NAME)
+	db, err := sql.Open("postgres", dbinfo)
 
-    checkErr(err)
+	checkErr(err)
 
-    return db
+	return db
 }
 
 func readDNAFromFile(rantaidna string) string {
@@ -86,47 +87,48 @@ func validateDNA(DNA string) bool {
 }
 
 func KMPMatch(pattern string, text string) bool {
-	var pattern_len int = len(pattern)
-	var text_len int = len(text)
-	var kmparray = make([]int, pattern_len)
-	var result bool = false
-	//Cari Suffix Prefix terbesar
+	result := false
+	pattern_lenght := len(pattern)
+	string_lenght := len(text)
+
+	var lps = make([]int, pattern_lenght)
+
 	len := 0
-	kmparray[0] = 0
-	var j int = 1 //Pointer buat pattern
-	for j < pattern_len-1 {
-		if pattern[j] == pattern[len] {
+	lps[0] = 0
+
+	i := 1
+	for i < pattern_lenght {
+		if pattern[i] == pattern[len] {
 			len++
-			kmparray[j] = len
-			j++
+			lps[i] = len
+			i++
 		} else {
 			if len != 0 {
-				len = kmparray[len-1]
+				len = lps[len-1]
 			} else {
-				kmparray[j] = 0
-				j++
+				lps[i] = 0
+				i++
 			}
 		}
 	}
 
-	//String Matching
-	var i int = 0 //Pointer buat text
-	j = 0         //Pointer buat pattern
-	for i < text_len {
-		if text[i] == pattern[j] {
-			i++
+	i = 0
+	j := 0
+	for i < string_lenght {
+		if pattern[j] == text[i] {
 			j++
-		} else {
-			if j != 0 {
-				j = kmparray[j-1]
-			} else {
-				i++
-			}
+			i++
 		}
-		if j == pattern_len {
-			fmt.Printf("Pattern found at index %d\n", i-j)
+		if j == pattern_lenght {
 			result = true
-			j = kmparray[j-1]
+			fmt.Println("Pattern found at index ", i-j)
+			j = lps[j-1]
+		} else if i < string_lenght && pattern[j] != text[i] {
+			if j != 0 {
+				j = lps[j-1]
+			} else {
+				i = i + 1
+			}
 		}
 	}
 	return result
@@ -174,14 +176,14 @@ func BoyerMooreMatch(pattern string, text string) bool {
 }
 
 func rowExists(query string) bool {
-    var exists bool
+	var exists bool
 	db := setupDB()
-    query = fmt.Sprintf("SELECT exists (%s)", query)
-    err := db.QueryRow(query).Scan(&exists)
-    if err != nil && err != sql.ErrNoRows {
-        log.Fatalf("No rows: %s", query)
-    }
-    return exists
+	query = fmt.Sprintf("SELECT exists (%s)", query)
+	err := db.QueryRow(query).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		log.Fatalf("No rows: %s", query)
+	}
+	return exists
 }
 
 func addpenyakit(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +195,7 @@ func addpenyakit(w http.ResponseWriter, r *http.Request) {
 
 	db := setupDB()
 
-	if (validateDNA(rantaidna)) {
+	if validateDNA(rantaidna) {
 		res, err := db.Query("INSERT INTO penyakit (namapenyakit, rantaidna) VALUES ('" + namapenyakit + "','" + rantaidna + "')")
 		if err != nil {
 			log.Fatal(err)
@@ -202,7 +204,7 @@ func addpenyakit(w http.ResponseWriter, r *http.Request) {
 		defer res.Close()
 		defer db.Close()
 	}
-	
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 }
@@ -238,10 +240,10 @@ func addprediksiBM(w http.ResponseWriter, r *http.Request) {
 	rantaidna := readDNAFromFile(params["rantaidna"])
 	namapasien := params["namapasien"]
 
-	if (validateDNA(rantaidna)) {
+	if validateDNA(rantaidna) {
 
 		db := setupDB()
-		if (rowExists("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")) {
+		if rowExists("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'") {
 			res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
 			res.Next()
 
@@ -253,7 +255,7 @@ func addprediksiBM(w http.ResponseWriter, r *http.Request) {
 			tm := time.Now()
 			if hasil {
 				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
-				
+
 				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
 				jsonResponse, jsonError := json.Marshal(ret)
 				if jsonError != nil {
@@ -274,7 +276,7 @@ func addprediksiBM(w http.ResponseWriter, r *http.Request) {
 				defer db.Close()
 			} else {
 				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
-				
+
 				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
 				fmt.Println(ret)
 				jsonResponse, jsonError := json.Marshal(ret)
@@ -320,11 +322,11 @@ func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
 	rantaidna := readDNAFromFile(params["rantaidna"])
 	namapasien := params["namapasien"]
 
-	if (validateDNA(rantaidna)) {
+	if validateDNA(rantaidna) {
 
 		db := setupDB()
 
-		if (rowExists("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")) {
+		if rowExists("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'") {
 			res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
 			res.Next()
 
@@ -336,7 +338,7 @@ func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
 			tm := time.Now()
 			if hasil {
 				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
-				
+
 				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
 				jsonResponse, jsonError := json.Marshal(ret)
 				if jsonError != nil {
@@ -355,7 +357,7 @@ func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
 				defer db.Close()
 			} else {
 				fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
-				
+
 				ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
 				fmt.Println(ret)
 				jsonResponse, jsonError := json.Marshal(ret)
@@ -475,24 +477,24 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(datemonthyear)
 
 		// Check existence of data searched
-		if (rowExists("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'")) {
+		if rowExists("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'") {
 			res, err := db.Query("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'")
 			checkErr(err)
 			for res.Next() {
 				var varprediksi prediksi
 				err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
-				
+
 				checkErr(err)
 				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 			}
 			checkErr(err)
-			
+
 			defer res.Close()
 		}
 	} else {
 		if datemonthyear == "" {
 			fmt.Println(namapenyakit)
-			if (rowExists("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "'")) {
+			if rowExists("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "'") {
 				res, err := db.Query("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "'")
 				if err != nil {
 					log.Fatal(err)
@@ -504,15 +506,15 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 					checkErr(err)
 					semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 				}
-				
+
 				defer res.Close()
 			}
-		}else {
+		} else {
 			fmt.Println(datemonthyear + " " + namapenyakit)
-			if (rowExists("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "' AND tanggalprediksi like '" + datemonthyear + "'")) {
+			if rowExists("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "' AND tanggalprediksi like '" + datemonthyear + "'") {
 				res, err := db.Query("SELECT * FROM prediksi WHERE namapenyakit like '" + namapenyakit + "' AND tanggalprediksi like '" + datemonthyear + "'")
 				checkErr(err)
-				
+
 				for res.Next() {
 					var varprediksi prediksi
 					err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
@@ -520,7 +522,7 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 					checkErr(err)
 					semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 				}
-				
+
 				defer res.Close()
 			}
 		}

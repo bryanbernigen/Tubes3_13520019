@@ -41,8 +41,7 @@ CREATE TABLE prediksi(
 	tanggalprediksi VARCHAR(255),
 	namapasien VARCHAR(255),
 	namapenyakit VARCHAR(255),
-	statuspenyakit BOOLEAN,
-	PRIMARY KEY (tanggalprediksi, namapasien, namapenyakit)
+	statuspenyakit BOOLEAN
 );
 
 Before running go, install POSTGRESQL

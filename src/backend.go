@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"regexp"
 	"strings"
@@ -11,7 +10,7 @@ import (
 	"net/http"
 	"encoding/json"
 	"github.com/gorilla/mux"
-	// "os"
+	// "strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -22,105 +21,45 @@ const (
 	DB_NAME 	= "dnadb"
 )
 
-type Prediksi struct {
-	tanggalprediksi string	`json:"tanggalprediksi"`
-	namapasien      string	`json:"namapasien"`
-	namapenyakit    string	`json:"namapenyakit"`
-	statuspenyakit  bool	`json:"statuspenyakit"`
+type prediksi struct {
+	Tanggalprediksi string	`json:"tanggalprediksi"`
+	Namapasien      string	`json:"namapasien"`
+	Namapenyakit    string	`json:"namapenyakit"`
+	Statuspenyakit  bool	`json:"statuspenyakit"`
 }
 
 type Penyakit struct {
-	namapenyakit string		`json:"namapenyakit"`
-	rantaidna    string		`json:"rantaidna"`
+	Namapenyakit string		`json:"namapenyakit"`
+	Rantaidna    string		`json:"rantaidna"`
 }
 
 type Input struct {
-	input string	`json:"input"`
+	Input 		string		`json:"input"`
 }
 
-// var dummy []Penyakit
+type Status struct {
+	Statuspenyakit 	bool 	`json:"statuspenyakit"`
+}
 
 func main() {
 	fmt.Println("Server started on port 8080")
 	r := mux.NewRouter()
 
-	type person struct {
-		Name     string
-		LastName string
-		Age      uint8
-	}
-
-	//CONTOH HELLO WORLD
-	r.HandleFunc("/",func(w http.ResponseWriter, r *http.Request){
-		enableCors(&w)
-
-		fmt.Println("HELLO WORLD is called!")
-		person := person{Name: "Shashank", LastName: "Tiwari", Age: 30}
-
-		jsonResponse, jsonError := json.Marshal(person)
-		
-		if jsonError != nil {
-		fmt.Println("Unable to encode JSON")
-		}
-		
-		fmt.Println(string(jsonResponse))
-		
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResponse)
-
-	}).Methods("GET")
-
-
-	r.HandleFunc("/{penyakit}",
-		func(w http.ResponseWriter, r *http.Request){
-		enableCors(&w)
-		// get data from body
-		var data map[string]interface{}
-		json.NewDecoder(r.Body).Decode(&data)
-		fmt.Println("data")
-		fmt.Println(data)
-		fmt.Println(data["name"])
-
-		vars := mux.Vars(r)
-		penyakit := vars["penyakit"]
-		fmt.Println("penyakti yg dikirim adalah", penyakit);
-
-		person := person{Name: "ini yg dari post", LastName: "huhu", Age: 14}
-
-		jsonResponse, jsonError := json.Marshal(person)
-		
-		if jsonError != nil {
-		fmt.Println("Unable to encode JSON")
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(jsonResponse)
-
-	}).Methods("POST");
-	r.HandleFunc("/api/submitdisease", addpenyakit).Methods("POST")
-	r.HandleFunc("/api/getprediction", addprediksi).Methods("POST")
-	r.HandleFunc("/api/searchdisease", searchpenyakit).Methods("GET")
+	r.HandleFunc("/api/submitdisease/{namapenyakit}/{rantaidna}", addpenyakit).Methods("POST")
+	r.HandleFunc("/api/getpredictionKMP/{namapasien}/{rantaidna}/{namapenyakit}", addprediksiKMP).Methods("POST")
+	r.HandleFunc("/api/getpredictionBM/{namapasien}/{rantaidna}/{namapenyakit}", addprediksiBM).Methods("POST")
+	r.HandleFunc("/api/searchdisease", searchpenyakit).Methods("POST")
 	http.ListenAndServe(":8080", r)
-}
-
-// func getPort() (string, error) {
-// 	// the PORT is supplied by Heroku
-// 	port := os.Getenv("PORT")
-// 	if port == "" {
-// 	  return "", fmt.Errorf("$PORT not set")
-// 	}
-// 	return ":" + port, nil
-// }
-func enableCors(w *http.ResponseWriter) {
-	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func checkErr(err error) {
     if err != nil {
         panic(err)
     }
+}
+
+func enableCors(w *http.ResponseWriter) {
+	(*w).Header().Set("Access-Control-Allow-Origin", "*")
 }
 
 func setupDB() *sql.DB {
@@ -132,15 +71,11 @@ func setupDB() *sql.DB {
     return db
 }
 
-func readDNAFromFile(fileName string) string {
+func readDNAFromFile(rantaidna string) string {
 	var str string = ""
-	fileName = "../test/" + fileName
-	b, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		fmt.Print(err)
-	}
-	str = string(b)
+	str = string(rantaidna)
 	str = strings.Replace(str, "\n", "", -1)
+	// fmt.Println(str)
 	return str
 }
 
@@ -247,10 +182,13 @@ func addpenyakit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
+	namapenyakit := params["namapenyakit"]
+	rantaidna := readDNAFromFile(params["rantaidna"])
+
 	db := setupDB()
 
-	if (validateDNA(params["rantaidna"])) {
-		res, err := db.Query("INSERT INTO penyakit (namapenyakit, rantaidna) VALUES ('" + params["namapenyakit"] + "','" + params["rantaidna"] + "')")
+	if (validateDNA(rantaidna)) {
+		res, err := db.Query("INSERT INTO penyakit (namapenyakit, rantaidna) VALUES ('" + namapenyakit + "','" + rantaidna + "')")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -258,14 +196,11 @@ func addpenyakit(w http.ResponseWriter, r *http.Request) {
 		defer res.Close()
 		defer db.Close()
 	}
+	
+	w.WriteHeader(http.StatusOK)
 }
 
 func shownamapenyakit() {
-	// db, err := sql.Open("mysql", db_username+":"+db_password+"@tcp(127.0.0.1:3306)/"+db_name)
-	// if err != nil {
-	// 	panic(err.Error())
-	// }
-
 	db := setupDB()
 
 	res, err := db.Query("SELECT namapenyakit FROM penyakit")
@@ -288,46 +223,142 @@ func shownamapenyakit() {
 	defer db.Close()
 }
 
-
-
-func addprediksi(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func addprediksiBM(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
 	params := mux.Vars(r)
 
-	if (validateDNA(params["rantaidna"])) {
+	namapenyakit := params["namapenyakit"]
+	rantaidna := readDNAFromFile(params["rantaidna"])
+	namapasien := params["namapasien"]
+
+	if (validateDNA(rantaidna)) {
 
 		db := setupDB()
 
-		res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + params["namapenyakit"] + "'")
+		res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
 		res.Next()
+
 		var pattern string
 		res.Scan(&pattern)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		hasil := KMPMatch(pattern, params["sequencedna"])
+		hasil := BoyerMooreMatch(pattern, rantaidna)
 		tm := time.Now()
 		if hasil {
-			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + params["namapengguna"] + "','" + params["namapenyakit"] + "','1')")
+			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
+			
+			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
+			jsonResponse, jsonError := json.Marshal(ret)
+			if jsonError != nil {
+				fmt.Println("Unable to encode JSON")
+			}
+
+			fmt.Println(string(jsonResponse))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResponse)
+
+			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','1')")
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			defer res.Close()
 			defer db.Close()
-
-			fmt.Println(json.NewEncoder(w).Encode(Prediksi{tanggalprediksi: tm.Format("2006-01-02"), namapasien: params["namapasien"], namapenyakit: params["namapenyakit"], statuspenyakit: true}))
 		} else {
-			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + params["namapengguna"] + "','" + params["namapenyakit"] + "','0')")
+			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
+			
+			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
+			fmt.Println(ret)
+			jsonResponse, jsonError := json.Marshal(ret)
+			if jsonError != nil {
+				log.Fatal(jsonError)
+			}
+
+			fmt.Println(string(jsonResponse))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResponse)
+
+			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','0')")
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			defer res.Close()
 			defer db.Close()
+		}
+	}
+}
 
-			json.NewEncoder(w).Encode(Prediksi{tanggalprediksi: tm.Format("2006-01-02"), namapasien: params["namapasien"], namapenyakit: params["namapenyakit"], statuspenyakit: false})
+func addprediksiKMP(w http.ResponseWriter, r *http.Request) {
+	enableCors(&w)
+	params := mux.Vars(r)
+
+	namapenyakit := params["namapenyakit"]
+	rantaidna := readDNAFromFile(params["rantaidna"])
+	namapasien := params["namapasien"]
+
+	if (validateDNA(rantaidna)) {
+
+		db := setupDB()
+
+		res, err := db.Query("SELECT rantaidna FROM penyakit WHERE namapenyakit = '" + namapenyakit + "'")
+		res.Next()
+
+		var pattern string
+		res.Scan(&pattern)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		hasil := KMPMatch(pattern, rantaidna)
+		tm := time.Now()
+		if hasil {
+			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "true")
+			
+			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: true}
+			jsonResponse, jsonError := json.Marshal(ret)
+			if jsonError != nil {
+				fmt.Println("Unable to encode JSON")
+			}
+
+			fmt.Println(string(jsonResponse))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResponse)
+
+			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','1')")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			defer res.Close()
+			defer db.Close()
+		} else {
+			fmt.Println("Prediksi berhasil " + tm.Format("2006-01-02") + " " + namapasien + " " + namapenyakit + " " + "false")
+			
+			ret := prediksi{Tanggalprediksi: tm.Format("2006-01-02"), Namapasien: namapasien, Namapenyakit: namapenyakit, Statuspenyakit: false}
+			fmt.Println(ret)
+			jsonResponse, jsonError := json.Marshal(ret)
+			if jsonError != nil {
+				log.Fatal(jsonError)
+			}
+
+			fmt.Println(string(jsonResponse))
+
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(jsonResponse)
+
+			res, err := db.Query("INSERT INTO prediksi VALUES('" + tm.Format("2006-01-02") + "','" + namapasien + "','" + namapenyakit + "','0')")
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			defer res.Close()
+			defer db.Close()
 		}
 	}
 }
@@ -410,7 +441,7 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 
 	db := setupDB()
 
-	var semuaprediksi []Prediksi
+	var semuaprediksi []prediksi
 	if namapenyakit == "" {
 		fmt.Println(datemonthyear)
 		res, err := db.Query("SELECT * FROM prediksi WHERE tanggalprediksi like '" + datemonthyear + "'")
@@ -418,13 +449,13 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 			log.Fatal(err)
 		}
 		for res.Next() {
-			var prediksi Prediksi
-			err := res.Scan(&prediksi.tanggalprediksi, &prediksi.namapasien, &prediksi.namapenyakit, &prediksi.statuspenyakit)
+			var varprediksi prediksi
+			err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
 			
 			if err != nil {
 				log.Fatal(err)
 			}
-			semuaprediksi = append(semuaprediksi, Prediksi{tanggalprediksi: prediksi.tanggalprediksi, namapasien: prediksi.namapasien, namapenyakit: prediksi.namapenyakit, statuspenyakit: prediksi.statuspenyakit})
+			semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 		}
 		defer res.Close()
 		json.NewEncoder(w).Encode(semuaprediksi)
@@ -436,13 +467,13 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 				log.Fatal(err)
 			}
 			for res.Next() {
-				var prediksi Prediksi
-				err := res.Scan(&prediksi.tanggalprediksi, &prediksi.namapasien, &prediksi.namapenyakit, &prediksi.statuspenyakit)
+				var varprediksi prediksi
+				err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
 
 				if err != nil {
 					log.Fatal(err)
 				}
-				semuaprediksi = append(semuaprediksi, Prediksi{tanggalprediksi: prediksi.tanggalprediksi, namapasien: prediksi.namapasien, namapenyakit: prediksi.namapenyakit, statuspenyakit: prediksi.statuspenyakit})
+				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 			}
 			fmt.Println(semuaprediksi)
 			defer res.Close()
@@ -452,13 +483,13 @@ func searchpenyakit(w http.ResponseWriter, r *http.Request) {
 				log.Fatal(err)
 			
 			for res.Next() {
-				var prediksi Prediksi
-				err := res.Scan(&prediksi.tanggalprediksi, &prediksi.namapasien, &prediksi.namapenyakit, &prediksi.statuspenyakit)
+				var varprediksi prediksi
+				err := res.Scan(&varprediksi.Tanggalprediksi, &varprediksi.Namapasien, &varprediksi.Namapenyakit, &varprediksi.Statuspenyakit)
 
 				if err != nil {
 					log.Fatal(err)
 				}
-				semuaprediksi = append(semuaprediksi, Prediksi{tanggalprediksi: prediksi.tanggalprediksi, namapasien: prediksi.namapasien, namapenyakit: prediksi.namapenyakit, statuspenyakit: prediksi.statuspenyakit})
+				semuaprediksi = append(semuaprediksi, prediksi{Tanggalprediksi: varprediksi.Tanggalprediksi, Namapasien: varprediksi.Namapasien, Namapenyakit: varprediksi.Namapenyakit, Statuspenyakit: varprediksi.Statuspenyakit})
 			}
 			defer res.Close()
 			json.NewEncoder(w).Encode(semuaprediksi)

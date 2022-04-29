@@ -79,6 +79,12 @@
     margin-top: 20px;
 }
 
+.submitButtonCt {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
 .submitButton {
     font-family: "Montserrat Bold";
     font-weight: 700;
@@ -89,6 +95,8 @@
     color: black;
     padding: 15px 30px;
     margin-top: 20px;
+    width: 300px;
+    cursor: pointer;
 }
 
 .submitButton:hover {
@@ -97,6 +105,10 @@
     
     -webkit-transition-duration: 0.3s; 
     transition-duration: 0.3s;
+}
+
+.spacing {
+    width: 100px;
 }
 
 .resultText {

@@ -87,6 +87,7 @@
     color: white;
     padding: 15px 30px;
     margin-top: 20px;
+    cursor: pointer;
 }
 
 .submitButton:hover {
